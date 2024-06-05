@@ -1,4 +1,4 @@
-pip install langchain
+!pip install langchain
 import streamlit as st 
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.document_loaders import PyPDFLoader, DirectoryLoader
