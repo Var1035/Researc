@@ -1,8 +1,6 @@
-# streamlit_app.py
-
 import streamlit as st 
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.document_loaders import PyPDFLoader
+from langchain_community.document_loaders import PyPDFLoader
 from transformers import T5Tokenizer, T5ForConditionalGeneration, pipeline
 import torch
 import base64
@@ -12,10 +10,10 @@ import os
 checkpoint = "LaMini-Flan-T5-248M"
 tokenizer = T5Tokenizer.from_pretrained(checkpoint)
 base_model = T5ForConditionalGeneration.from_pretrained(
-    checkpoint, device_map='auto', torch_dtype=torch.float32
+    checkpoint, torch_dtype=torch.float32
 )
 
-# Preprocess PDF file
+# Preprocess PDF file and return plain text
 def file_preprocessing(file_path):
     loader = PyPDFLoader(file_path)
     pages = loader.load_and_split()
@@ -24,21 +22,22 @@ def file_preprocessing(file_path):
     final_texts = ""
     for text in texts:
         final_texts += text.page_content
-    return final_texts
+    return final_texts[:3000]  # Limit to first 3000 chars to avoid token overflow
 
-# LLM pipeline for summarization
+# Summarization pipeline using Transformers
 def llm_pipeline(filepath):
     pipe_sum = pipeline(
         'summarization',
         model=base_model,
         tokenizer=tokenizer,
-        max_length=500, 
+        max_length=500,
         min_length=50
     )
     input_text = file_preprocessing(filepath)
     result = pipe_sum(input_text)
     return result[0]['summary_text']
 
+# PDF viewer in browser using base64
 @st.cache_data
 def displayPDF(file_path):
     with open(file_path, "rb") as f:
@@ -46,8 +45,8 @@ def displayPDF(file_path):
     pdf_display = f'<iframe src="data:application/pdf;base64,{base64_pdf}" width="100%" height="600" type="application/pdf"></iframe>'
     st.markdown(pdf_display, unsafe_allow_html=True)
 
-# Streamlit app
-st.set_page_config(page_title="Document Summarizer", layout="wide")
+# Streamlit App
+st.set_page_config(page_title="📄 Document Summarizer", layout="wide")
 
 def main():
     st.title("📄 Document Summarization App using Language Model")
